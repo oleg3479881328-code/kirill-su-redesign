@@ -14,6 +14,8 @@ Static redesign is implemented and locally verified on 2026-07-03.
   - `content.json`
   - `original.html`
   - `.nojekyll`
+- Public-facing UI has been refocused from parser/audit presentation to a real resident-facing website layout.
+- Original header image from `kirill.su` is extracted separately as `heroImage` and restored as the main visual in the redesigned hero.
 - Extracted snapshot contains the required issue themes:
   - payments / repair
   - initiative neighbor / management conflict
@@ -39,15 +41,16 @@ If the live fetch fails, the builder creates a graceful fallback artifact instea
 
 ## Current Frontend Model
 
-- `script.js` reads `content.json` and renders section cards, media, and the original text stream.
-- The page now shows whether the current build used the live source or a fallback snapshot.
-- The redesign still preserves an auditable raw-text section and a link to the original source or saved HTML.
+- `script.js` reads `content.json` and renders human sections for residents instead of exposing the raw snapshot stream in the public UI.
+- The hero now prefers `heroImage`, which is extracted from the original page cover before falling back to ordinary gallery images.
+- Public navigation is organized around resident-facing sections such as contributions, history, position, meeting, handoff, finance, access, and personal data.
 
 ## Next Practical Step
 
-Enable GitHub Pages with `build_type=workflow`, push the updated workflow, and verify the public URL after a successful Actions deploy.
+Push the restored public redesign, verify GitHub Pages deployment, and confirm desktop/mobile rendering on the public URL.
 
 ## Known Notes
 
 - The extractor remains intentionally dependency-light and regex-based.
 - The project does not manually maintain source text in application code; the build artifact remains the preservation layer.
+- Technical snapshot/debug concepts can remain in the repository internals, but should stay invisible in the public UI.

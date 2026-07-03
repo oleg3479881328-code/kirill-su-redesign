@@ -50,6 +50,19 @@ function extractImages(html) {
   return [...urls];
 }
 
+function extractHeroImage(html) {
+  const coverMatch = html.match(/data-content-cover-bg=["']([^"']+)["']/i);
+  if (coverMatch?.[1]) return coverMatch[1];
+
+  const bgMatch = html.match(/background-image:url\(['"]?(https?:\/\/[^'")]+)['"]?\)/i);
+  if (bgMatch?.[1]) return bgMatch[1];
+
+  const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+  if (ogMatch?.[1]) return ogMatch[1];
+
+  return extractImages(html)[0] || null;
+}
+
 function extractLinks(html) {
   const urls = new Set();
   const rx = /<a\b[^>]*href=["']([^"']+)["'][^>]*>/gi;
@@ -125,6 +138,7 @@ async function main() {
       fetchOk: true,
       warnings: [],
       pageTitle: extractPageTitle(html) || lines[0] || 'kirill.su',
+      heroImage: extractHeroImage(html),
       lines,
       images: extractImages(html),
       links: extractLinks(html)
@@ -155,6 +169,7 @@ async function main() {
       fetchOk: false,
       warnings: [warning, 'No previous snapshot was available, so a minimal fallback page was generated.'],
       pageTitle: 'kirill.su — источник временно недоступен',
+      heroImage: null,
       lines: [
         'Источник временно недоступен.',
         'Автоматический снимок не удалось получить во время этой сборки.',

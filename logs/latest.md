@@ -15,9 +15,13 @@ Completed:
 - Updated GitHub Pages workflow to use Node 24.
 - Expanded `README.md`, `PROJECT_STATE.md`, and this log with the verified deployment path.
 - Identified the current Pages deployment blocker: repository Pages is not enabled yet, so `actions/configure-pages` fails with `404`.
+- Reworked the public UI away from snapshot/debug cards into a resident-facing redesign with real content sections.
+- Restored the original `kirill.su` header image as the primary hero visual by extracting and storing `heroImage` in `content.json`.
+- Split the public narrative into clearer sections, including a dedicated handoff block for transfer of authority.
+- Removed the mobile horizontal nav scroller in favor of wrapped navigation pills.
 
 Next:
 
-- Enable GitHub Pages with GitHub Actions as the source.
 - Push the updated branch.
 - Re-run the workflow and verify the public Pages URL.
+- Confirm the public hero uses the restored source header image on desktop and mobile.
