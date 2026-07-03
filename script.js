@@ -110,18 +110,32 @@ function renderMedia(data) {
   grid.innerHTML = cards.length ? cards.join('') : '<article class="media-card"><p>Внешние материалы не найдены в сохранённом снимке.</p></article>';
 }
 
+function renderWarnings(data) {
+  const root = document.getElementById('snapshotWarnings');
+  const warnings = Array.isArray(data.warnings) ? data.warnings.filter(Boolean) : [];
+  if (!root) return;
+  root.innerHTML = warnings.length
+    ? warnings.map(text => `<li>${escapeHtml(text)}</li>`).join('')
+    : '<li>Источник получен напрямую во время текущей сборки.</li>';
+  root.parentElement?.classList.toggle('is-warning', !data.fetchOk || warnings.length > 0);
+}
+
 function hydrate(data) {
   state.data = data;
   const lines = Array.isArray(data.lines) ? data.lines : [];
   const sections = splitSections(lines);
-  document.getElementById('siteTitle').textContent = lines[0] || 'kirill.su redesign';
+  document.getElementById('siteTitle').textContent = data.pageTitle || lines[0] || 'kirill.su redesign';
   document.getElementById('snapshotMeta').textContent = data.generatedAt ? `Снимок создан: ${new Date(data.generatedAt).toLocaleString('ru-RU')}` : 'Снимок создан при сборке сайта.';
+  document.getElementById('snapshotStatus').textContent = data.fetchOk ? 'Источник получен успешно' : 'Показан резервный снимок';
   document.getElementById('lineCount').textContent = String(lines.filter(Boolean).length);
   document.getElementById('sectionCount').textContent = String(sections.length);
   document.getElementById('mediaCount').textContent = String((data.images || []).length + (data.links || []).length);
   document.getElementById('rawText').textContent = lines.join('\n');
+  document.getElementById('openOriginal').href = data.fetchOk ? data.sourceUrl || 'https://kirill.su/' : 'original.html';
+  document.getElementById('openOriginal').textContent = data.fetchOk ? 'Открыть источник' : 'Открыть сохранённый HTML';
   renderSections(sections);
   renderMedia(data);
+  renderWarnings(data);
   revealNow();
 }
 
@@ -129,6 +143,7 @@ function hydrateFallback() {
   const msg = 'Контент не найден. Запустите сборку GitHub Pages или выполните npm run build, чтобы создать dist/content.json.';
   document.getElementById('siteTitle').textContent = 'Нужна сборка контента';
   document.getElementById('snapshotMeta').textContent = msg;
+  document.getElementById('snapshotStatus').textContent = 'Данные не загружены';
   document.getElementById('rawText').textContent = msg;
 }
 
@@ -169,10 +184,17 @@ function wireUi() {
     glow.style.top = `${event.clientY}px`;
   }, { passive: true });
   document.getElementById('copySource')?.addEventListener('click', async () => {
+    const button = document.getElementById('copySource');
     const text = document.getElementById('rawText').textContent || '';
-    await navigator.clipboard.writeText(text);
-    document.getElementById('copySource').textContent = 'Скопировано';
-    setTimeout(() => document.getElementById('copySource').textContent = 'Скопировать текст', 1400);
+    try {
+      await navigator.clipboard.writeText(text);
+      button.textContent = 'Скопировано';
+    } catch {
+      button.textContent = 'Копирование недоступно';
+    }
+    setTimeout(() => {
+      button.textContent = 'Скопировать текст';
+    }, 1400);
   });
   revealNow();
 }

@@ -3,6 +3,9 @@ import { existsSync } from 'node:fs';
 
 const SOURCE_URL = process.env.SOURCE_URL || 'https://kirill.su/';
 const OUT_DIR = 'dist';
+const ORIGINAL_PATH = `${OUT_DIR}/original.html`;
+const CONTENT_PATH = `${OUT_DIR}/content.json`;
+const NOISE_LINES = new Set(['Made on', 'Tilda']);
 
 function decodeEntities(text) {
   return text
@@ -13,8 +16,27 @@ function decodeEntities(text) {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#x2F;/g, '/')
+    .replace(/&laquo;/g, '«')
+    .replace(/&raquo;/g, '»')
+    .replace(/&ndash;/g, '–')
+    .replace(/&mdash;/g, '—')
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
+}
+
+function extractPageTitle(html) {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return decodeEntities(match?.[1] || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isUsefulImage(url) {
+  if (!/^https?:\/\//i.test(url)) return false;
+  if (/static\.tildacdn\.com\/img\/tildafavicon/i.test(url)) return false;
+  if (/static\.tildacdn\.com\/img\/tildacopy/i.test(url)) return false;
+  if (/lib\/icons\/tilda\//i.test(url)) return false;
+  return true;
 }
 
 function extractImages(html) {
@@ -23,7 +45,7 @@ function extractImages(html) {
   let match;
   while ((match = rx.exec(html))) {
     const url = match[1];
-    if (/^https?:\/\//i.test(url) && !/static\.tildacdn\.com\/img\/tildafavicon/i.test(url)) urls.add(url);
+    if (isUsefulImage(url)) urls.add(url);
   }
   return [...urls];
 }
@@ -51,7 +73,7 @@ function extractVisibleText(html) {
   const lines = text
     .split(/\n+/)
     .map(line => line.replace(/[ \t]+/g, ' ').trim())
-    .filter(line => line && !/^Made on Tilda$/i.test(line));
+    .filter(line => line && !NOISE_LINES.has(line) && !/^Made on Tilda$/i.test(line));
 
   const deduped = [];
   for (const line of lines) {
@@ -68,25 +90,82 @@ async function copyStatic() {
   }
 }
 
+async function readPreviousSnapshot() {
+  if (!existsSync(CONTENT_PATH) || !existsSync(ORIGINAL_PATH)) return null;
+  try {
+    const [contentRaw, originalHtml] = await Promise.all([
+      readFile(CONTENT_PATH, 'utf8'),
+      readFile(ORIGINAL_PATH, 'utf8')
+    ]);
+    return { content: JSON.parse(contentRaw), originalHtml };
+  } catch {
+    return null;
+  }
+}
+
+async function writeSnapshot({ html, data }) {
+  await writeFile(CONTENT_PATH, JSON.stringify(data, null, 2), 'utf8');
+  await writeFile(ORIGINAL_PATH, html, 'utf8');
+  await copyStatic();
+}
+
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
-  const response = await fetch(SOURCE_URL, {
-    headers: { 'user-agent': 'kirill-su-redesign-snapshot/1.0' }
-  });
-  if (!response.ok) throw new Error(`Cannot fetch ${SOURCE_URL}: ${response.status}`);
-  const html = await response.text();
-  const lines = extractVisibleText(html);
-  const data = {
-    sourceUrl: SOURCE_URL,
-    generatedAt: new Date().toISOString(),
-    lines,
-    images: extractImages(html),
-    links: extractLinks(html)
-  };
-  await writeFile(`${OUT_DIR}/content.json`, JSON.stringify(data, null, 2), 'utf8');
-  await writeFile(`${OUT_DIR}/original.html`, html, 'utf8');
-  await copyStatic();
-  console.log(`Saved ${lines.length} text lines, ${data.images.length} images, ${data.links.length} links from ${SOURCE_URL}`);
+  try {
+    const response = await fetch(SOURCE_URL, {
+      headers: { 'user-agent': 'kirill-su-redesign-snapshot/1.0' }
+    });
+    if (!response.ok) throw new Error(`Cannot fetch ${SOURCE_URL}: ${response.status}`);
+
+    const html = await response.text();
+    const lines = extractVisibleText(html);
+    const data = {
+      sourceUrl: SOURCE_URL,
+      generatedAt: new Date().toISOString(),
+      fetchOk: true,
+      warnings: [],
+      pageTitle: extractPageTitle(html) || lines[0] || 'kirill.su',
+      lines,
+      images: extractImages(html),
+      links: extractLinks(html)
+    };
+
+    await writeSnapshot({ html, data });
+    console.log(`Saved ${lines.length} text lines, ${data.images.length} images, ${data.links.length} links from ${SOURCE_URL}`);
+  } catch (error) {
+    const previous = await readPreviousSnapshot();
+    const warning = `Source fetch failed at build time: ${error.message}`;
+
+    if (previous) {
+      const data = {
+        ...previous.content,
+        generatedAt: new Date().toISOString(),
+        fetchOk: false,
+        warnings: [...new Set([...(previous.content.warnings || []), warning, 'Rendered from the last successful local snapshot.'])]
+      };
+      await writeSnapshot({ html: previous.originalHtml, data });
+      console.warn(`Used previous snapshot fallback because ${error.message}`);
+      return;
+    }
+
+    const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>kirill.su fallback</title></head><body><p>Source snapshot unavailable.</p></body></html>`;
+    const data = {
+      sourceUrl: SOURCE_URL,
+      generatedAt: new Date().toISOString(),
+      fetchOk: false,
+      warnings: [warning, 'No previous snapshot was available, so a minimal fallback page was generated.'],
+      pageTitle: 'kirill.su — источник временно недоступен',
+      lines: [
+        'Источник временно недоступен.',
+        'Автоматический снимок не удалось получить во время этой сборки.',
+        'Проверьте доступность https://kirill.su/ и запустите сборку повторно.'
+      ],
+      images: [],
+      links: [SOURCE_URL]
+    };
+    await writeSnapshot({ html, data });
+    console.warn(`Created minimal fallback snapshot because ${error.message}`);
+  }
 }
 
 main().catch(error => {
