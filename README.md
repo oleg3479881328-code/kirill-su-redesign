@@ -1,1 +1,3 @@
-# kirill-su-redesign 
+# kirill-su-redesign
+
+Modern static redesign.
