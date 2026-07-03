@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>kirill.su — современный редизайн</title>
+  <meta name="description" content="Современный редизайн сайта kirill.su с сохранением исходного содержания." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="cursor-glow" aria-hidden="true"></div>
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="К началу страницы">
+      <span class="brand-mark">БЖ</span>
+      <span>kirill.su redesign</span>
+    </a>
+    <nav class="nav" aria-label="Навигация">
+      <a href="#overview">Обзор</a>
+      <a href="#sections">Разделы</a>
+      <a href="#original">Оригинал</a>
+      <a href="#media">Материалы</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero section-shell">
+      <div class="hero-bg" aria-hidden="true">
+        <span class="orb orb-a"></span>
+        <span class="orb orb-b"></span>
+        <span class="grid-sphere"></span>
+      </div>
+      <div class="hero-copy reveal">
+        <p class="eyebrow">официальный контент • новый интерфейс</p>
+        <h1 id="siteTitle">Загрузка содержания...</h1>
+        <p class="lead">Сайт собран как современная статическая версия: контент берётся из сохранённого снимка оригинальной страницы, а дизайн, структура и анимации полностью обновлены.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#sections">Смотреть разделы</a>
+          <a class="button ghost" href="#original">Оригинальный поток текста</a>
+        </div>
+      </div>
+      <aside class="hero-card reveal delay-1">
+        <div class="status-dot"></div>
+        <h2>Снимок источника</h2>
+        <p id="snapshotMeta">Готовлю данные...</p>
+        <div class="stats-grid">
+          <div><strong id="lineCount">—</strong><span>строк текста</span></div>
+          <div><strong id="sectionCount">—</strong><span>разделов</span></div>
+          <div><strong id="mediaCount">—</strong><span>медиа/ссылок</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="overview" class="section-shell intro-grid">
+      <div class="section-heading reveal">
+        <p class="eyebrow">как это работает</p>
+        <h2>Информация не переписывается</h2>
+      </div>
+      <div class="feature-grid reveal delay-1">
+        <article>
+          <span>01</span>
+          <h3>Источник</h3>
+          <p>Во время публикации сборщик получает страницу kirill.su и сохраняет видимый текст в локальный JSON для GitHub Pages.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Редизайн</h3>
+          <p>Новый слой отвечает за типографику, навигацию, карточки, анимацию, адаптивность и современную подачу.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Оригинал</h3>
+          <p>Внизу страницы есть режим сплошного текста: строки идут в порядке исходной страницы без ручного пересказа.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="sections" class="section-shell content-section">
+      <div class="section-heading reveal">
+        <p class="eyebrow">материалы</p>
+        <h2>Разделы сайта</h2>
+      </div>
+      <div id="sectionNav" class="quick-map reveal"></div>
+      <div id="contentSections" class="content-stack"></div>
+    </section>
+
+    <section id="media" class="section-shell content-section">
+      <div class="section-heading reveal">
+        <p class="eyebrow">вложения и ссылки</p>
+        <h2>Медиа и внешние материалы</h2>
+      </div>
+      <div id="mediaGrid" class="media-grid reveal"></div>
+    </section>
+
+    <section id="original" class="section-shell content-section">
+      <div class="section-heading reveal">
+        <p class="eyebrow">контрольная копия</p>
+        <h2>Оригинальный поток текста</h2>
+      </div>
+      <article class="source-card reveal">
+        <div class="source-toolbar">
+          <button id="copySource" type="button">Скопировать текст</button>
+          <a id="openOriginal" href="https://kirill.su/" target="_blank" rel="noopener">Открыть источник</a>
+        </div>
+        <pre id="rawText">Загрузка...</pre>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>
+      <strong>kirill.su redesign</strong>
+      <p>Статический сайт с автоматическим снимком исходной страницы при деплое.</p>
+    </div>
+    <a href="#top">Наверх ↑</a>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
